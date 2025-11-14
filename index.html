@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>VAS Production Scheduler</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg);} }
+    .animate-spin { animation: spin 1s linear infinite; }
+    .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <!-- Header -->
+    <header class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">VAS Production Scheduler</h1>
+        <p class="text-sm text-slate-600">
+          Kitting · Bagging · Labeling – capacity, SLA, labor and margin in one view.
+        </p>
+      </div>
+      <button id="refreshBtn" class="mt-2 sm:mt-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-900">
+        <span id="refreshIcon" class="hidden animate-spin border-2 border-t-transparent border-white rounded-full w-4 h-4"></span>
+        <span>Refresh Data</span>
+      </button>
+    </header>
+
+    <!-- Connection Status Alert -->
+    <div id="connectionAlert" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+      <p class="text-sm text-red-800">
+        <strong>Connection Error:</strong> Unable to connect to the server. Please check your Google Apps Script deployment settings.
+      </p>
+    </div>
+
+    <!-- KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <p class="text-xs text-slate-500 uppercase">Total Required Hours (Filtered)</p>
+        <p id="kpiHours" class="text-xl font-semibold text-slate-800">0.0</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <p class="text-xs text-slate-500 uppercase">Labor Cost (Planned)</p>
+        <p id="kpiLaborCost" class="text-xl font-semibold text-slate-800">$0.00</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <p class="text-xs text-slate-500 uppercase">Planned Throughput</p>
+        <p id="kpiThroughput" class="text-xl font-semibold text-slate-800">0.0 units/hr</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <p class="text-xs text-slate-500 uppercase">Average Margin (Filtered)</p>
+        <p id="kpiMargin" class="text-xl font-semibold text-slate-800">0.0%</p>
+      </div>
+    </section>
+
+    <!-- Form + Table -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Form -->
+      <section class="bg-white rounded-xl shadow-sm p-4 lg:col-span-1">
+        <h2 class="text-sm font-semibold text-slate-800 mb-3">New VAS Job</h2>
+        <form id="orderForm" class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Order ID</label>
+            <input name="orderId" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Client</label>
+            <input name="client" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Work Type</label>
+            <select name="workType" class="w-full border rounded-lg px-2 py-1.5 text-sm">
+              <option value="Kitting">Kitting</option>
+              <option value="Bagging">Bagging</option>
+              <option value="Labeling">Labeling</option>
+              <option value="Reboxing">Reboxing</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Project Description</label>
+            <input name="description" class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Total Units</label>
+              <input name="totalUnits" type="number" min="0" step="1" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Units / Hour</label>
+              <input name="standardRate" type="number" min="1" step="1" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Project Revenue ($)</label>
+            <input name="projectRevenue" type="number" min="0" step="0.01" class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">SLA Date</label>
+              <input name="slaDate" type="date" class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Priority</label>
+              <select name="priority" class="w-full border rounded-lg px-2 py-1.5 text-sm">
+                <option value="High">High</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+            <select name="status" class="w-full border rounded-lg px-2 py-1.5 text-sm">
+              <option value="Scheduled" selected>Scheduled</option>
+              <option value="In Progress">In Progress</option>
+              <option value="QA">QA</option>
+              <option value="Completed">Completed</option>
+              <option value="On Hold">On Hold</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            class="w-full mt-2 inline-flex justify-center items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+          >
+            <span id="submitSpinner" class="hidden animate-spin border-2 border-t-transparent border-white rounded-full w-4 h-4"></span>
+            <span>Create Job</span>
+          </button>
+          <p id="formMessage" class="mt-1 text-xs text-slate-600"></p>
+        </form>
+      </section>
+
+      <!-- Table -->
+      <section class="bg-white rounded-xl shadow-sm p-4 lg:col-span-2">
+        <div class="flex flex-col sm:flex-row gap-4 mb-4 sm:items-center sm:justify-between">
+          <h2 class="text-sm font-semibold text-slate-800">Open Jobs</h2>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <select id="filterClient" class="border rounded-lg px-2 py-1.5 text-sm min-w-[160px]">
+              <option value="">All Clients</option>
+            </select>
+            <select id="filterStatus" class="border rounded-lg px-2 py-1.5 text-sm min-w-[140px]">
+              <option value="">All Status</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="In Progress">In Progress</option>
+              <option value="QA">QA</option>
+              <option value="Completed">Completed</option>
+              <option value="On Hold">On Hold</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-auto max-h-[500px] border rounded-xl">
+          <table class="min-w-full text-xs">
+            <thead class="bg-slate-50 text-slate-600 border-b text-[11px] uppercase">
+              <tr>
+                <th class="px-2 py-2 text-left">Order</th>
+                <th class="px-2 py-2 text-left">Client</th>
+                <th class="px-2 py-2 text-left">Work</th>
+                <th class="px-2 py-2 text-right">Units</th>
+                <th class="px-2 py-2 text-right">Units/Hr</th>
+                <th class="px-2 py-2 text-right">Req. Hrs</th>
+                <th class="px-2 py-2 text-right">Labor $</th>
+                <th class="px-2 py-2 text-right">Revenue $</th>
+                <th class="px-2 py-2 text-right">Margin %</th>
+                <th class="px-2 py-2 text-left">SLA</th>
+                <th class="px-2 py-2 text-left">Priority</th>
+                <th class="px-2 py-2 text-left">Status</th>
+                <th class="px-2 py-2 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody" class="divide-y divide-slate-100 text-[11px]"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <div class="modal-backdrop fixed inset-0" onclick="closeEditModal()"></div>
+      <div class="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 z-10">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-slate-800">Edit Job</h3>
+          <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <form id="editForm" class="space-y-4">
+          <input type="hidden" name="rowIndex" id="editRowIndex" />
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Order ID</label>
+              <input name="orderId" id="editOrderId" required class="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Client</label>
+              <input name="client" id="editClient" required class="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Work Type</label>
+              <select name="workType" id="editWorkType" class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="Kitting">Kitting</option>
+                <option value="Bagging">Bagging</option>
+                <option value="Labeling">Labeling</option>
+                <option value="Reboxing">Reboxing</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+              <select name="status" id="editStatus" class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="Scheduled">Scheduled</option>
+                <option value="In Progress">In Progress</option>
+                <option value="QA">QA</option>
+                <option value="Completed">Completed</option>
+                <option value="On Hold">On Hold</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Project Description</label>
+            <input name="description" id="editDescription" class="w-full border rounded-lg px-3 py-2 text-sm" />
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Total Units</label>
+              <input name="totalUnits" id="editTotalUnits" type="number" min="0" step="1" required class="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Units / Hour</label>
+              <input name="standardRate" id="editStandardRate" type="number" min="1" step="1" required class="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Revenue ($)</label>
+              <input name="projectRevenue" id="editProjectRevenue" type="number" min="0" step="0.01" class="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">SLA Date</label>
+              <input name="slaDate" id="editSlaDate" type="date" class="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Priority</label>
+              <select name="priority" id="editPriority" class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-xs font-medium text-blue-800 mb-2">💡 Actual Labor Tracking</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-blue-700 mb-1">Actual Hours Spent</label>
+                <input name="actualHours" id="editActualHours" type="number" min="0" step="0.1" placeholder="Override calculated hours" class="w-full border rounded-lg px-3 py-2 text-sm" />
+                <p class="text-[10px] text-blue-600 mt-1">Leave blank to use calculated hours</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-blue-700 mb-1">Actual Labor Cost ($)</label>
+                <input name="actualLaborCost" id="editActualLaborCost" type="number" min="0" step="0.01" placeholder="Override calculated cost" class="w-full border rounded-lg px-3 py-2 text-sm" />
+                <p class="text-[10px] text-blue-600 mt-1">Leave blank to use calculated cost</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button
+              type="submit"
+              class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+            >
+              <span id="editSpinner" class="hidden animate-spin border-2 border-t-transparent border-white rounded-full w-4 h-4"></span>
+              <span>Save Changes</span>
+            </button>
+            <button
+              type="button"
+              onclick="closeEditModal()"
+              class="px-4 py-2 rounded-lg bg-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+          <p id="editMessage" class="mt-2 text-xs text-slate-600"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ================= CONFIG =================
+    const CONFIG = {
+      SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbx9RdpR3EfN6p5BC4AJG31xK4eKF7-NoNjx-R3ZJ0oK06LxpjTgqOxfDC3ZCp0AA-fZ/exec',
+      LABOR_RATE: 27
+    };
+
+    const headersMap = {
+      timestamp: 'Timestamp',
+      orderId: 'Order ID',
+      client: 'Client',
+      workType: 'Work Type',
+      description: 'Project Description',
+      totalUnits: 'Total Units',
+      standardRate: 'Standard Rate (Units/Hour)',
+      slaDate: 'SLA Date',
+      priority: 'Priority',
+      status: 'Status',
+      projectRevenue: 'Project Revenue',
+      requiredHours: 'Required Hours',
+      laborCost: 'Labor Cost',
+      margin: 'Margin',
+      marginPct: 'Margin %',
+      actualHours: 'Actual Hours',
+      actualLaborCost: 'Actual Labor Cost'
+    };
+
+    const refreshBtn = document.getElementById('refreshBtn');
+    const refreshIcon = document.getElementById('refreshIcon');
+    const ordersBody = document.getElementById('ordersBody');
+    const kpiHours = document.getElementById('kpiHours');
+    const kpiLaborCost = document.getElementById('kpiLaborCost');
+    const kpiThroughput = document.getElementById('kpiThroughput');
+    const kpiMargin = document.getElementById('kpiMargin');
+    const orderForm = document.getElementById('orderForm');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const formMessage = document.getElementById('formMessage');
+    const filterClient = document.getElementById('filterClient');
+    const filterStatus = document.getElementById('filterStatus');
+    const connectionAlert = document.getElementById('connectionAlert');
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+    const editSpinner = document.getElementById('editSpinner');
+    const editMessage = document.getElementById('editMessage');
+
+    let GLOBAL_ROWS = [];
+
+    function showConnectionError(show) {
+      connectionAlert.classList.toggle('hidden', !show);
+    }
+
+    function setRefreshing(isLoading) {
+      if (!refreshBtn) return;
+      refreshBtn.disabled = isLoading;
+      refreshIcon.classList.toggle('hidden', !isLoading);
+    }
+
+    function setSubmitting(isLoading) {
+      orderForm.querySelector('button[type="submit"]').disabled = isLoading;
+      submitSpinner.classList.toggle('hidden', !isLoading);
+    }
+
+    function setEditSubmitting(isLoading) {
+      editForm.querySelector('button[type="submit"]').disabled = isLoading;
+      editSpinner.classList.toggle('hidden', !isLoading);
+    }
+
+    function openEditModal(rowIndex) {
+      const row = GLOBAL_ROWS[rowIndex];
+      if (!row) return;
+
+      const get = (key) => row[headersMap[key]];
+
+      document.getElementById('editRowIndex').value = rowIndex;
+      document.getElementById('editOrderId').value = get('orderId') || '';
+      document.getElementById('editClient').value = get('client') || '';
+      document.getElementById('editWorkType').value = get('workType') || 'Kitting';
+      document.getElementById('editDescription').value = get('description') || '';
+      document.getElementById('editTotalUnits').value = get('totalUnits') || '';
+      document.getElementById('editStandardRate').value = get('standardRate') || '';
+      document.getElementById('editProjectRevenue').value = get('projectRevenue') || '';
+      
+      // Format date for input
+      const slaDate = get('slaDate');
+      if (slaDate) {
+        const date = new Date(slaDate);
+        if (!isNaN(date)) {
+          document.getElementById('editSlaDate').value = date.toISOString().split('T')[0];
+        }
+      }
+      
+      document.getElementById('editPriority').value = get('priority') || 'Medium';
+      document.getElementById('editStatus').value = get('status') || 'Scheduled';
+      document.getElementById('editActualHours').value = get('actualHours') || '';
+      document.getElementById('editActualLaborCost').value = get('actualLaborCost') || '';
+
+      editMessage.textContent = '';
+      editModal.classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+      editForm.reset();
+    }
+
+    async function fetchOrders() {
+      try {
+        setRefreshing(true);
+        showConnectionError(false);
+        
+        const url = CONFIG.SCRIPT_URL + '?action=list';
+        
+        const res = await fetch(url, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const json = await res.json();
+        
+        if (!json.success) {
+          console.error('Error from backend', json);
+          showConnectionError(true);
+          return;
+        }
+
+        GLOBAL_ROWS = json.data || [];
+        populateClientFilter(GLOBAL_ROWS);
+        applyFilters();
+        
+      } catch (err) {
+        console.error('Fetch error:', err);
+        showConnectionError(true);
+      } finally {
+        setRefreshing(false);
+      }
+    }
+
+    function populateClientFilter(rows) {
+      const existing = new Set();
+      existing.add('');
+
+      filterClient.innerHTML = '';
+      const allOpt = document.createElement('option');
+      allOpt.value = '';
+      allOpt.textContent = 'All Clients';
+      filterClient.appendChild(allOpt);
+
+      rows.forEach(row => {
+        const client = row[headersMap.client] || '';
+        if (client && !existing.has(client)) {
+          existing.add(client);
+          const opt = document.createElement('option');
+          opt.value = client;
+          opt.textContent = client;
+          filterClient.appendChild(opt);
+        }
+      });
+    }
+
+    function applyFilters() {
+      const clientFilter = filterClient.value;
+      const statusFilter = filterStatus.value;
+
+      const filtered = GLOBAL_ROWS.filter(row => {
+        const client = row[headersMap.client] || '';
+        const status = row[headersMap.status] || '';
+
+        const matchClient = clientFilter === '' || client === clientFilter;
+        const matchStatus = statusFilter === '' || status === statusFilter;
+
+        return matchClient && matchStatus;
+      });
+
+      renderFilteredTable(filtered);
+    }
+
+    function renderFilteredTable(rows) {
+      ordersBody.innerHTML = '';
+
+      let totalReqHours = 0;
+      let totalLabor = 0;
+      let totalUnits = 0;
+      let marginSum = 0;
+      let marginCount = 0;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      rows.forEach((row, displayIndex) => {
+        const get = (key) => row[headersMap[key]];
+        
+        // Find actual index in GLOBAL_ROWS
+        const actualIndex = GLOBAL_ROWS.indexOf(row);
+
+        const orderId = get('orderId') || '';
+        const client = get('client') || '';
+        const workType = get('workType') || '';
+        const description = get('description') || '';
+        const units = Number(get('totalUnits')) || 0;
+        const rate = Number(get('standardRate')) || 0;
+        
+        // Use actual hours/cost if provided, otherwise calculate
+        const actualHours = Number(get('actualHours')) || null;
+        const actualLaborCost = Number(get('actualLaborCost')) || null;
+        
+        const calculatedHours = rate > 0 ? units / rate : 0;
+        const reqHours = actualHours !== null ? actualHours : calculatedHours;
+        
+        const calculatedLaborCost = calculatedHours * CONFIG.LABOR_RATE;
+        const laborCost = actualLaborCost !== null ? actualLaborCost : calculatedLaborCost;
+        
+        const revenue = Number(get('projectRevenue')) || 0;
+        const marginPct = revenue > 0 ? (revenue - laborCost) / revenue : 0;
+
+        let slaRaw = get('slaDate');
+        let slaText = '';
+        let slaClass = '';
+        if (slaRaw) {
+          const slaDate = new Date(slaRaw);
+          if (!isNaN(slaDate)) {
+            slaText = slaDate.toLocaleDateString();
+            const slaMidnight = new Date(slaDate);
+            slaMidnight.setHours(0, 0, 0, 0);
+            if (slaMidnight < today) {
+              slaClass = 'text-red-600 font-semibold';
+            } else if (slaMidnight.getTime() === today.getTime()) {
+              slaClass = 'text-amber-600 font-semibold';
+            } else {
+              slaClass = 'text-emerald-600';
+            }
+          }
+        }
+
+        const priority = get('priority') || '';
+        const status = get('status') || '';
+
+        totalReqHours += reqHours;
+        totalLabor += laborCost;
+        totalUnits += units;
+        if (!isNaN(marginPct) && isFinite(marginPct)) {
+          marginSum += marginPct;
+          marginCount += 1;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className =
+          status === 'Completed'
+            ? 'bg-emerald-50'
+            : slaClass.includes('text-red')
+            ? 'bg-red-50'
+            : '';
+
+        // Show indicator if actual values differ from calculated
+        const laborIndicator = actualLaborCost !== null ? 
+          '<span class="text-blue-600" title="Using actual labor cost">*</span>' : '';
+        const hoursIndicator = actualHours !== null ? 
+          '<span class="text-blue-600" title="Using actual hours">*</span>' : '';
+
+        tr.innerHTML = `
+          <td class="px-2 py-1 align-top">
+            <div class="font-semibold text-slate-800">${orderId || '-'}</div>
+            <div class="text-[10px] text-slate-500 truncate max-w-[140px]">${description || ''}</div>
+          </td>
+          <td class="px-2 py-1 align-top text-slate-700">${client}</td>
+          <td class="px-2 py-1 align-top text-slate-700">${workType}</td>
+          <td class="px-2 py-1 align-top text-right">${units.toLocaleString()}</td>
+          <td class="px-2 py-1 align-top text-right">${rate ? rate.toLocaleString() : '-'}</td>
+          <td class="px-2 py-1 align-top text-right">${reqHours.toFixed(2)}${hoursIndicator}</td>
+          <td class="px-2 py-1 align-top text-right">$${laborCost.toFixed(2)}${laborIndicator}</td>
+          <td class="px-2 py-1 align-top text-right">$${revenue.toFixed(2)}</td>
+          <td class="px-2 py-1 align-top text-right">${(marginPct * 100).toFixed(1)}%</td>
+          <td class="px-2 py-1 align-top ${slaClass}">${slaText || '-'}</td>
+          <td class="px-2 py-1 align-top">${priority}</td>
+          <td class="px-2 py-1 align-top">${status}</td>
+          <td class="px-2 py-1 align-top text-center">
+            <button 
+              onclick="openEditModal(${actualIndex})"
+              class="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-slate-200 text-slate-600"
+              title="Edit job"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </button>
+          </td>
+        `;
+
+        ordersBody.appendChild(tr);
+      });
+
+      kpiHours.textContent = totalReqHours.toFixed(2);
+      kpiLaborCost.textContent = '$' + totalLabor.toFixed(2);
+      const throughput = totalReqHours > 0 ? totalUnits / totalReqHours : 0;
+      kpiThroughput.textContent = throughput.toFixed(1) + ' units/hr';
+      const avgMargin = marginCount > 0 ? (marginSum / marginCount) * 100 : 0;
+      kpiMargin.textContent = avgMargin.toFixed(1) + '%';
+    }
+
+    orderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formMessage.textContent = '';
+      showConnectionError(false);
+      
+      const formData = new FormData(orderForm);
+
+      const payload = {
+        orderId: formData.get('orderId'),
+        client: formData.get('client'),
+        workType: formData.get('workType'),
+        description: formData.get('description'),
+        totalUnits: formData.get('totalUnits'),
+        standardRate: formData.get('standardRate'),
+        projectRevenue: formData.get('projectRevenue'),
+        slaDate: formData.get('slaDate'),
+        priority: formData.get('priority'),
+        status: formData.get('status')
+      };
+
+      try {
+        setSubmitting(true);
+        
+        const res = await fetch(CONFIG.SCRIPT_URL, {
+          method: 'POST',
+          body: new URLSearchParams({
+            action: 'add',
+            payload: JSON.stringify(payload)
+          }),
+          redirect: 'follow'
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const json = await res.json();
+        
+        if (!json.success) {
+          formMessage.textContent = 'Error saving job: ' + (json.message || 'Unknown error');
+          formMessage.className = 'mt-1 text-xs text-red-600';
+          return;
+        }
+        
+        formMessage.textContent = 'Job created successfully.';
+        formMessage.className = 'mt-1 text-xs text-emerald-600';
+        orderForm.reset();
+        
+        setTimeout(() => {
+          fetchOrders();
+        }, 500);
+        
+      } catch (err) {
+        console.error('Submit error:', err);
+        formMessage.textContent = 'Network or server error. Check console for details.';
+        formMessage.className = 'mt-1 text-xs text-red-600';
+        showConnectionError(true);
+      } finally {
+        setSubmitting(false);
+      }
+    });
+
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      editMessage.textContent = '';
+      
+      const formData = new FormData(editForm);
+      const rowIndex = parseInt(formData.get('rowIndex'));
+
+      const payload = {
+        rowIndex: rowIndex,
+        orderId: formData.get('orderId'),
+        client: formData.get('client'),
+        workType: formData.get('workType'),
+        description: formData.get('description'),
+        totalUnits: formData.get('totalUnits'),
+        standardRate: formData.get('standardRate'),
+        projectRevenue: formData.get('projectRevenue'),
+        slaDate: formData.get('slaDate'),
+        priority: formData.get('priority'),
+        status: formData.get('status'),
+        actualHours: formData.get('actualHours') || null,
+        actualLaborCost: formData.get('actualLaborCost') || null
+      };
+
+      try {
+        setEditSubmitting(true);
+        
+        const res = await fetch(CONFIG.SCRIPT_URL, {
+          method: 'POST',
+          body: new URLSearchParams({
+            action: 'update',
+            payload: JSON.stringify(payload)
+          }),
+          redirect: 'follow'
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const json = await res.json();
+        
+        if (!json.success) {
+          editMessage.textContent = 'Error updating job: ' + (json.message || 'Unknown error');
+          editMessage.className = 'mt-2 text-xs text-red-600';
+          return;
+        }
+        
+        editMessage.textContent = 'Job updated successfully!';
+        editMessage.className = 'mt-2 text-xs text-emerald-600';
+        
+        setTimeout(() => {
+          closeEditModal();
+          fetchOrders();
+        }, 1000);
+        
+      } catch (err) {
+        console.error('Update error:', err);
+        editMessage.textContent = 'Network or server error.';
+        editMessage.className = 'mt-2 text-xs text-red-600';
+      } finally {
+        setEditSubmitting(false);
+      }
+    });
+
+    refreshBtn.addEventListener('click', fetchOrders);
+    filterClient.addEventListener('change', applyFilters);
+    filterStatus.addEventListener('change', applyFilters);
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !editModal.classList.contains('hidden')) {
+        closeEditModal();
+      }
+    });
+
+    // Initial load
+    fetchOrders();
+  </script>
+</body>
+</html>
