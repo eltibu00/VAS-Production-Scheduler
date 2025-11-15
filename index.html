@@ -550,12 +550,18 @@
         }
 
         const tr = document.createElement('tr');
-        tr.className =
-          status === 'Completed'
-            ? 'bg-emerald-50'
-            : slaClass.includes('text-red')
-            ? 'bg-red-50'
-            : '';
+
+// Determine row color based on margin and status
+let rowClass = '';
+if (marginPct < 0) {
+  rowClass = 'bg-red-100 border-l-4 border-red-500'; // LOSING MONEY - RED!
+} else if (status === 'Completed') {
+  rowClass = 'bg-emerald-50';
+} else if (slaClass.includes('text-red')) {
+  rowClass = 'bg-red-50';
+}
+
+tr.className = rowClass;
 
         // Show indicator if actual values differ from calculated
         const laborIndicator = actualLaborCost !== null ? 
