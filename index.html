@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     @keyframes spin { to { transform: rotate(360deg);} }
     .animate-spin { animation: spin 1s linear infinite; }
@@ -13,7 +14,7 @@
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
-  <div class="max-w-6xl mx-auto px-4 py-6">
+  <div class="max-w-7xl mx-auto px-4 py-6">
     <!-- Header -->
     <header class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -57,17 +58,33 @@
 
     <!-- Form + Table -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Form -->
+      <!-- Left Sidebar: Form + Time Study -->
       <section class="bg-white rounded-xl shadow-sm p-4 lg:col-span-1">
+        <!-- New VAS Job Form -->
         <h2 class="text-sm font-semibold text-slate-800 mb-3">New VAS Job</h2>
-        <form id="orderForm" class="space-y-3">
+        <form id="orderForm" class="space-y-3 mb-6 pb-6 border-b border-slate-200">
           <div>
             <label class="block text-xs font-medium text-slate-600 mb-1">Order ID</label>
             <input name="orderId" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-600 mb-1">Client</label>
-            <input name="client" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            <select name="client" required class="w-full border rounded-lg px-2 py-1.5 text-sm">
+              <option value="">Select Client...</option>
+              <option value="Bears with Benefits, Inc.(Havea)">Bears with Benefits, Inc.(Havea)</option>
+              <option value="Biologique Recherche (BR)">Biologique Recherche (BR)</option>
+              <option value="Granado, INC.">Granado, INC.</option>
+              <option value="IT Works">IT Works</option>
+              <option value="Lampe Berger (Maison)">Lampe Berger (Maison)</option>
+              <option value="LimeLife USA LLC">LimeLife USA LLC</option>
+              <option value="Maelys Cosmetics">Maelys Cosmetics</option>
+              <option value="Natura International, Inc.">Natura International, Inc.</option>
+              <option value="Pierre Fabre (PF)">Pierre Fabre (PF)</option>
+              <option value="Promix Nutrition TopCo Inc">Promix Nutrition TopCo Inc</option>
+              <option value="Radixis Inc (DBA Yves Rocher USA)">Radixis Inc (DBA Yves Rocher USA)</option>
+              <option value="Tiffany and Company">Tiffany and Company</option>
+              <option value="VB Beauty LLC">VB Beauty LLC</option>
+            </select>
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-600 mb-1">Work Type</label>
@@ -130,6 +147,99 @@
           </button>
           <p id="formMessage" class="mt-1 text-xs text-slate-600"></p>
         </form>
+
+        <!-- Time Study Calculator -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 class="text-sm font-semibold text-slate-800 mb-3">⏱️ Time Study Calculator</h3>
+          
+          <div class="mb-4 text-center">
+            <div class="text-3xl font-mono font-bold text-slate-800 mb-2" id="timerDisplay">00:00:00</div>
+            <div class="flex gap-2 justify-center">
+              <button id="startTimer" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
+                Start
+              </button>
+              <button id="stopTimer" class="hidden px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+                Stop
+              </button>
+              <button id="resetTimer" class="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-medium hover:bg-slate-700">
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <form id="timeStudyForm" class="space-y-3">
+            <input type="hidden" name="duration" id="studyDuration" />
+            <input type="hidden" name="startTime" id="studyStartTime" />
+            <input type="hidden" name="endTime" id="studyEndTime" />
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Client</label>
+              <select name="client" required class="w-full border rounded-lg px-2 py-1.5 text-sm">
+                <option value="">Select Client...</option>
+                <option value="Bears with Benefits, Inc.(Havea)">Bears with Benefits, Inc.(Havea)</option>
+                <option value="Biologique Recherche (BR)">Biologique Recherche (BR)</option>
+                <option value="Granado, INC.">Granado, INC.</option>
+                <option value="IT Works">IT Works</option>
+                <option value="Lampe Berger (Maison)">Lampe Berger (Maison)</option>
+                <option value="LimeLife USA LLC">LimeLife USA LLC</option>
+                <option value="Maelys Cosmetics">Maelys Cosmetics</option>
+                <option value="Natura International, Inc.">Natura International, Inc.</option>
+                <option value="Pierre Fabre (PF)">Pierre Fabre (PF)</option>
+                <option value="Promix Nutrition TopCo Inc">Promix Nutrition TopCo Inc</option>
+                <option value="Radixis Inc (DBA Yves Rocher USA)">Radixis Inc (DBA Yves Rocher USA)</option>
+                <option value="Tiffany and Company">Tiffany and Company</option>
+                <option value="VB Beauty LLC">VB Beauty LLC</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Work Type</label>
+              <select name="workType" required class="w-full border rounded-lg px-2 py-1.5 text-sm">
+                <option value="">Select...</option>
+                <option value="Kitting">Kitting</option>
+                <option value="Bagging">Bagging</option>
+                <option value="Labeling">Labeling</option>
+                <option value="Reboxing">Reboxing</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Team Member Name</label>
+              <input name="teamMember" required class="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="Who performed this study?" />
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Units Completed</label>
+              <input name="unitsCompleted" type="number" min="1" step="1" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Notes (Optional)</label>
+              <textarea name="notes" class="w-full border rounded-lg px-2 py-1.5 text-sm" rows="2" placeholder="Any observations..."></textarea>
+            </div>
+            
+            <div class="bg-white rounded p-2 text-xs">
+              <strong>Calculated Rate:</strong> <span id="calculatedRate">- units/hr</span>
+            </div>
+            
+            <button
+              type="submit"
+              class="w-full inline-flex justify-center items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+            >
+              <span id="studySpinner" class="hidden animate-spin border-2 border-t-transparent border-white rounded-full w-4 h-4"></span>
+              <span>Save Study</span>
+            </button>
+            <p id="studyMessage" class="mt-1 text-xs text-slate-600"></p>
+          </form>
+
+          <button
+            id="exportStudies"
+            class="w-full mt-3 inline-flex justify-center items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-800"
+          >
+            📊 Export Time Studies to Excel
+          </button>
+        </div>
       </section>
 
       <!-- Table -->
@@ -175,6 +285,36 @@
         </div>
       </section>
     </div>
+
+    <!-- Margin Targets Section -->
+    <section class="bg-white rounded-xl shadow-sm p-4 mt-6">
+      <h2 class="text-sm font-semibold text-slate-800 mb-3">📊 Margin Target Analysis</h2>
+      <p class="text-xs text-slate-600 mb-4">
+        Shows target hours and required production rates to achieve 30% and 20% profit margins on each job.
+      </p>
+      
+      <div class="overflow-auto max-h-[400px] border rounded-xl">
+        <table class="min-w-full text-xs">
+          <thead class="bg-slate-50 text-slate-600 border-b text-[11px] uppercase sticky top-0">
+            <tr>
+              <th class="px-2 py-2 text-left bg-slate-50">Order</th>
+              <th class="px-2 py-2 text-left bg-slate-50">Client</th>
+              <th class="px-2 py-2 text-right bg-slate-50">Revenue</th>
+              <th class="px-2 py-2 text-right bg-slate-50">Current<br/>Margin %</th>
+              <th class="px-2 py-2 text-right bg-emerald-50">Target Hrs<br/>(30%)</th>
+              <th class="px-2 py-2 text-right bg-emerald-50">Req Units/Hr<br/>(30%)</th>
+              <th class="px-2 py-2 text-right bg-blue-50">Target Hrs<br/>(20%)</th>
+              <th class="px-2 py-2 text-right bg-blue-50">Req Units/Hr<br/>(20%)</th>
+              <th class="px-2 py-2 text-right bg-slate-50">Current<br/>Hours</th>
+              <th class="px-2 py-2 text-right bg-slate-50">Current<br/>Units/Hr</th>
+              <th class="px-2 py-2 text-center bg-slate-50">30% Status</th>
+              <th class="px-2 py-2 text-center bg-slate-50">20% Status</th>
+            </tr>
+          </thead>
+          <tbody id="marginTargetsBody" class="divide-y divide-slate-100 text-[11px]"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <!-- Edit Modal -->
@@ -201,7 +341,22 @@
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-600 mb-1">Client</label>
-              <input name="client" id="editClient" required class="w-full border rounded-lg px-3 py-2 text-sm" />
+              <select name="client" id="editClient" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="">Select Client...</option>
+                <option value="Bears with Benefits, Inc.(Havea)">Bears with Benefits, Inc.(Havea)</option>
+                <option value="Biologique Recherche (BR)">Biologique Recherche (BR)</option>
+                <option value="Granado, INC.">Granado, INC.</option>
+                <option value="IT Works">IT Works</option>
+                <option value="Lampe Berger (Maison)">Lampe Berger (Maison)</option>
+                <option value="LimeLife USA LLC">LimeLife USA LLC</option>
+                <option value="Maelys Cosmetics">Maelys Cosmetics</option>
+                <option value="Natura International, Inc.">Natura International, Inc.</option>
+                <option value="Pierre Fabre (PF)">Pierre Fabre (PF)</option>
+                <option value="Promix Nutrition TopCo Inc">Promix Nutrition TopCo Inc</option>
+                <option value="Radixis Inc (DBA Yves Rocher USA)">Radixis Inc (DBA Yves Rocher USA)</option>
+                <option value="Tiffany and Company">Tiffany and Company</option>
+                <option value="VB Beauty LLC">VB Beauty LLC</option>
+              </select>
             </div>
           </div>
 
@@ -328,9 +483,11 @@
       actualLaborCost: 'Actual Labor Cost'
     };
 
+    // DOM Elements
     const refreshBtn = document.getElementById('refreshBtn');
     const refreshIcon = document.getElementById('refreshIcon');
     const ordersBody = document.getElementById('ordersBody');
+    const marginTargetsBody = document.getElementById('marginTargetsBody');
     const kpiHours = document.getElementById('kpiHours');
     const kpiLaborCost = document.getElementById('kpiLaborCost');
     const kpiThroughput = document.getElementById('kpiThroughput');
@@ -346,8 +503,85 @@
     const editSpinner = document.getElementById('editSpinner');
     const editMessage = document.getElementById('editMessage');
 
-    let GLOBAL_ROWS = [];
+    // Time Study Elements
+    const startTimer = document.getElementById('startTimer');
+    const stopTimer = document.getElementById('stopTimer');
+    const resetTimer = document.getElementById('resetTimer');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timeStudyForm = document.getElementById('timeStudyForm');
+    const studySpinner = document.getElementById('studySpinner');
+    const studyMessage = document.getElementById('studyMessage');
+    const calculatedRate = document.getElementById('calculatedRate');
+    const exportStudies = document.getElementById('exportStudies');
 
+    let GLOBAL_ROWS = [];
+    let GLOBAL_TIME_STUDIES = [];
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let studyStartTime = null;
+
+    // ================= TIMER FUNCTIONS =================
+    function formatTime(seconds) {
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      timerDisplay.textContent = formatTime(timerSeconds);
+    }
+
+    function updateCalculatedRate() {
+      const unitsInput = timeStudyForm.querySelector('[name="unitsCompleted"]');
+      const units = Number(unitsInput.value) || 0;
+      
+      if (timerSeconds > 0 && units > 0) {
+        const hours = timerSeconds / 3600;
+        const rate = units / hours;
+        calculatedRate.textContent = rate.toFixed(1) + ' units/hr';
+      } else {
+        calculatedRate.textContent = '- units/hr';
+      }
+    }
+
+    startTimer.addEventListener('click', () => {
+      studyStartTime = new Date();
+      startTimer.classList.add('hidden');
+      stopTimer.classList.remove('hidden');
+      
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        updateTimerDisplay();
+        updateCalculatedRate();
+      }, 1000);
+    });
+
+    stopTimer.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      const studyEndTime = new Date();
+      
+      document.getElementById('studyStartTime').value = studyStartTime.toISOString();
+      document.getElementById('studyEndTime').value = studyEndTime.toISOString();
+      document.getElementById('studyDuration').value = timerSeconds;
+      
+      stopTimer.classList.add('hidden');
+      startTimer.classList.remove('hidden');
+    });
+
+    resetTimer.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      timerSeconds = 0;
+      studyStartTime = null;
+      updateTimerDisplay();
+      updateCalculatedRate();
+      stopTimer.classList.add('hidden');
+      startTimer.classList.remove('hidden');
+    });
+
+    timeStudyForm.querySelector('[name="unitsCompleted"]').addEventListener('input', updateCalculatedRate);
+
+    // ================= HELPER FUNCTIONS =================
     function showConnectionError(show) {
       connectionAlert.classList.toggle('hidden', !show);
     }
@@ -368,6 +602,11 @@
       editSpinner.classList.toggle('hidden', !isLoading);
     }
 
+    function setStudySubmitting(isLoading) {
+      timeStudyForm.querySelector('button[type="submit"]').disabled = isLoading;
+      studySpinner.classList.toggle('hidden', !isLoading);
+    }
+
     function openEditModal(rowIndex) {
       const row = GLOBAL_ROWS[rowIndex];
       if (!row) return;
@@ -383,7 +622,6 @@
       document.getElementById('editStandardRate').value = get('standardRate') || '';
       document.getElementById('editProjectRevenue').value = get('projectRevenue') || '';
       
-      // Format date for input
       const slaDate = get('slaDate');
       if (slaDate) {
         const date = new Date(slaDate);
@@ -406,21 +644,16 @@
       editForm.reset();
     }
 
+    // ================= FETCH DATA =================
     async function fetchOrders() {
       try {
         setRefreshing(true);
         showConnectionError(false);
         
         const url = CONFIG.SCRIPT_URL + '?action=list';
+        const res = await fetch(url, { method: 'GET', redirect: 'follow' });
         
-        const res = await fetch(url, {
-          method: 'GET',
-          redirect: 'follow'
-        });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
         const json = await res.json();
         
@@ -439,6 +672,24 @@
         showConnectionError(true);
       } finally {
         setRefreshing(false);
+      }
+    }
+
+    async function fetchTimeStudies() {
+      try {
+        const url = CONFIG.SCRIPT_URL + '?action=listStudies';
+        const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+        
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        
+        const json = await res.json();
+        
+        if (json.success) {
+          GLOBAL_TIME_STUDIES = json.data || [];
+        }
+        
+      } catch (err) {
+        console.error('Fetch time studies error:', err);
       }
     }
 
@@ -479,8 +730,10 @@
       });
 
       renderFilteredTable(filtered);
+      renderMarginTargets(filtered);
     }
 
+    // ================= RENDER TABLES =================
     function renderFilteredTable(rows) {
       ordersBody.innerHTML = '';
 
@@ -495,8 +748,6 @@
 
       rows.forEach((row, displayIndex) => {
         const get = (key) => row[headersMap[key]];
-        
-        // Find actual index in GLOBAL_ROWS
         const actualIndex = GLOBAL_ROWS.indexOf(row);
 
         const orderId = get('orderId') || '';
@@ -506,7 +757,6 @@
         const units = Number(get('totalUnits')) || 0;
         const rate = Number(get('standardRate')) || 0;
         
-        // Use actual hours/cost if provided, otherwise calculate
         const actualHours = Number(get('actualHours')) || null;
         const actualLaborCost = Number(get('actualLaborCost')) || null;
         
@@ -551,19 +801,17 @@
 
         const tr = document.createElement('tr');
 
-// Determine row color based on margin and status
-let rowClass = '';
-if (marginPct < 0) {
-  rowClass = 'bg-red-100 border-l-4 border-red-500'; // LOSING MONEY - RED!
-} else if (status === 'Completed') {
-  rowClass = 'bg-emerald-50';
-} else if (slaClass.includes('text-red')) {
-  rowClass = 'bg-red-50';
-}
+        let rowClass = '';
+        if (marginPct < 0) {
+          rowClass = 'bg-red-100 border-l-4 border-red-500';
+        } else if (status === 'Completed') {
+          rowClass = 'bg-emerald-50';
+        } else if (slaClass.includes('text-red')) {
+          rowClass = 'bg-red-50';
+        }
 
-tr.className = rowClass;
+        tr.className = rowClass;
 
-        // Show indicator if actual values differ from calculated
         const laborIndicator = actualLaborCost !== null ? 
           '<span class="text-blue-600" title="Using actual labor cost">*</span>' : '';
         const hoursIndicator = actualHours !== null ? 
@@ -609,6 +857,89 @@ tr.className = rowClass;
       kpiMargin.textContent = avgMargin.toFixed(1) + '%';
     }
 
+    function renderMarginTargets(rows) {
+      marginTargetsBody.innerHTML = '';
+
+      rows.forEach(row => {
+        const get = (key) => row[headersMap[key]];
+
+        const orderId = get('orderId') || '';
+        const client = get('client') || '';
+        const units = Number(get('totalUnits')) || 0;
+        const rate = Number(get('standardRate')) || 0;
+        const revenue = Number(get('projectRevenue')) || 0;
+        
+        const actualHours = Number(get('actualHours')) || null;
+        const actualLaborCost = Number(get('actualLaborCost')) || null;
+        
+        const calculatedHours = rate > 0 ? units / rate : 0;
+        const currentHours = actualHours !== null ? actualHours : calculatedHours;
+        
+        const calculatedLaborCost = calculatedHours * CONFIG.LABOR_RATE;
+        const laborCost = actualLaborCost !== null ? actualLaborCost : calculatedLaborCost;
+        
+        const currentMarginPct = revenue > 0 ? (revenue - laborCost) / revenue : 0;
+        const currentUnitsPerHr = currentHours > 0 ? units / currentHours : 0;
+
+        // Calculate 30% margin targets
+        const targetLabor30 = revenue * 0.70; // 30% margin means 70% can go to labor
+        const targetHours30 = targetLabor30 / CONFIG.LABOR_RATE;
+        const requiredRate30 = targetHours30 > 0 ? units / targetHours30 : 0;
+
+        // Calculate 20% margin targets
+        const targetLabor20 = revenue * 0.80; // 20% margin means 80% can go to labor
+        const targetHours20 = targetLabor20 / CONFIG.LABOR_RATE;
+        const requiredRate20 = targetHours20 > 0 ? units / targetHours20 : 0;
+
+        // Determine status for 30%
+        let status30 = '';
+        let status30Class = '';
+        if (currentMarginPct >= 0.30) {
+          status30 = '✅ Achieving';
+          status30Class = 'bg-emerald-100 text-emerald-800';
+        } else if (requiredRate30 <= currentUnitsPerHr * 1.2) {
+          status30 = '⚠️ Close';
+          status30Class = 'bg-amber-100 text-amber-800';
+        } else {
+          status30 = '🚨 Difficult';
+          status30Class = 'bg-red-100 text-red-800';
+        }
+
+        // Determine status for 20%
+        let status20 = '';
+        let status20Class = '';
+        if (currentMarginPct >= 0.20) {
+          status20 = '✅ Achieving';
+          status20Class = 'bg-emerald-100 text-emerald-800';
+        } else if (requiredRate20 <= currentUnitsPerHr * 1.15) {
+          status20 = '⚠️ Close';
+          status20Class = 'bg-amber-100 text-amber-800';
+        } else {
+          status20 = '🚨 Difficult';
+          status20Class = 'bg-red-100 text-red-800';
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-2 py-1 align-top font-semibold text-slate-800">${orderId}</td>
+          <td class="px-2 py-1 align-top text-slate-700">${client}</td>
+          <td class="px-2 py-1 align-top text-right font-semibold">$${revenue.toFixed(2)}</td>
+          <td class="px-2 py-1 align-top text-right ${currentMarginPct >= 0.30 ? 'text-emerald-600 font-semibold' : currentMarginPct >= 0.20 ? 'text-blue-600' : 'text-red-600'}">${(currentMarginPct * 100).toFixed(1)}%</td>
+          <td class="px-2 py-1 align-top text-right bg-emerald-50 font-semibold">${targetHours30.toFixed(2)}</td>
+          <td class="px-2 py-1 align-top text-right bg-emerald-50 font-semibold">${requiredRate30.toFixed(1)}</td>
+          <td class="px-2 py-1 align-top text-right bg-blue-50 font-semibold">${targetHours20.toFixed(2)}</td>
+          <td class="px-2 py-1 align-top text-right bg-blue-50 font-semibold">${requiredRate20.toFixed(1)}</td>
+          <td class="px-2 py-1 align-top text-right">${currentHours.toFixed(2)}</td>
+          <td class="px-2 py-1 align-top text-right">${currentUnitsPerHr.toFixed(1)}</td>
+          <td class="px-2 py-1 align-top text-center"><span class="inline-block px-2 py-1 rounded text-[10px] font-semibold ${status30Class}">${status30}</span></td>
+          <td class="px-2 py-1 align-top text-center"><span class="inline-block px-2 py-1 rounded text-[10px] font-semibold ${status20Class}">${status20}</span></td>
+        `;
+
+        marginTargetsBody.appendChild(tr);
+      });
+    }
+
+    // ================= FORM SUBMISSIONS =================
     orderForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       formMessage.textContent = '';
@@ -641,9 +972,7 @@ tr.className = rowClass;
           redirect: 'follow'
         });
         
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
         const json = await res.json();
         
@@ -706,9 +1035,7 @@ tr.className = rowClass;
           redirect: 'follow'
         });
         
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
         const json = await res.json();
         
@@ -735,19 +1062,122 @@ tr.className = rowClass;
       }
     });
 
+    timeStudyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      studyMessage.textContent = '';
+      
+      if (timerSeconds === 0) {
+        studyMessage.textContent = 'Please run the timer first!';
+        studyMessage.className = 'mt-1 text-xs text-red-600';
+        return;
+      }
+
+      const formData = new FormData(timeStudyForm);
+
+      const payload = {
+        client: formData.get('client'),
+        workType: formData.get('workType'),
+        teamMember: formData.get('teamMember'),
+        unitsCompleted: formData.get('unitsCompleted'),
+        duration: timerSeconds,
+        startTime: formData.get('startTime'),
+        endTime: formData.get('endTime'),
+        notes: formData.get('notes')
+      };
+
+      try {
+        setStudySubmitting(true);
+        
+        const res = await fetch(CONFIG.SCRIPT_URL, {
+          method: 'POST',
+          body: new URLSearchParams({
+            action: 'addStudy',
+            payload: JSON.stringify(payload)
+          }),
+          redirect: 'follow'
+        });
+        
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        
+        const json = await res.json();
+        
+        if (!json.success) {
+          studyMessage.textContent = 'Error saving study: ' + (json.message || 'Unknown error');
+          studyMessage.className = 'mt-1 text-xs text-red-600';
+          return;
+        }
+        
+        studyMessage.textContent = 'Time study saved successfully!';
+        studyMessage.className = 'mt-1 text-xs text-emerald-600';
+        
+        // Reset form and timer
+        timeStudyForm.reset();
+        resetTimer.click();
+        
+        setTimeout(() => {
+          studyMessage.textContent = '';
+          fetchTimeStudies();
+        }, 2000);
+        
+      } catch (err) {
+        console.error('Study submit error:', err);
+        studyMessage.textContent = 'Network or server error.';
+        studyMessage.className = 'mt-1 text-xs text-red-600';
+      } finally {
+        setStudySubmitting(false);
+      }
+    });
+
+    // ================= EXPORT TO EXCEL =================
+    exportStudies.addEventListener('click', async () => {
+      await fetchTimeStudies();
+      
+      if (GLOBAL_TIME_STUDIES.length === 0) {
+        alert('No time studies to export yet.');
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const wsData = [
+        ['Timestamp', 'Client', 'Work Type', 'Team Member', 'Start Time', 'End Time', 'Duration (sec)', 'Duration (HH:MM:SS)', 'Units Completed', 'Units/Hour', 'Notes']
+      ];
+
+      GLOBAL_TIME_STUDIES.forEach(study => {
+        const duration = study['Duration (seconds)'] || 0;
+        wsData.push([
+          study['Timestamp'] || '',
+          study['Client'] || '',
+          study['Work Type'] || '',
+          study['Team Member'] || '',
+          study['Start Time'] || '',
+          study['End Time'] || '',
+          duration,
+          formatTime(duration),
+          study['Units Completed'] || '',
+          study['Units per Hour'] || '',
+          study['Notes'] || ''
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Time Studies');
+      XLSX.writeFile(wb, 'VAS_Time_Studies.xlsx');
+    });
+
+    // ================= EVENT LISTENERS =================
     refreshBtn.addEventListener('click', fetchOrders);
     filterClient.addEventListener('change', applyFilters);
     filterStatus.addEventListener('change', applyFilters);
 
-    // Close modal on Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !editModal.classList.contains('hidden')) {
         closeEditModal();
       }
     });
 
-    // Initial load
+    // ================= INITIAL LOAD =================
     fetchOrders();
+    fetchTimeStudies();
   </script>
 </body>
 </html>
