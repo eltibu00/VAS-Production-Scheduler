@@ -516,11 +516,14 @@
 
     let GLOBAL_ROWS = [];
     let GLOBAL_TIME_STUDIES = [];
+    
+    // FIXED: Timestamp-based timer (works even when screen locks)
     let timerInterval = null;
-    let timerSeconds = 0;
+    let timerStartTime = null;
+    let timerElapsedSeconds = 0;
     let studyStartTime = null;
 
-    // ================= TIMER FUNCTIONS =================
+    // ================= TIMER FUNCTIONS (MOBILE-FRIENDLY) =================
     function formatTime(seconds) {
       const hrs = Math.floor(seconds / 3600);
       const mins = Math.floor((seconds % 3600) / 60);
@@ -529,15 +532,20 @@
     }
 
     function updateTimerDisplay() {
-      timerDisplay.textContent = formatTime(timerSeconds);
+      if (timerStartTime) {
+        // Calculate elapsed time based on timestamps (works even if screen was locked)
+        const now = Date.now();
+        timerElapsedSeconds = Math.floor((now - timerStartTime) / 1000);
+      }
+      timerDisplay.textContent = formatTime(timerElapsedSeconds);
     }
 
     function updateCalculatedRate() {
       const unitsInput = timeStudyForm.querySelector('[name="unitsCompleted"]');
       const units = Number(unitsInput.value) || 0;
       
-      if (timerSeconds > 0 && units > 0) {
-        const hours = timerSeconds / 3600;
+      if (timerElapsedSeconds > 0 && units > 0) {
+        const hours = timerElapsedSeconds / 3600;
         const rate = units / hours;
         calculatedRate.textContent = rate.toFixed(1) + ' units/hr';
       } else {
@@ -547,23 +555,26 @@
 
     startTimer.addEventListener('click', () => {
       studyStartTime = new Date();
+      timerStartTime = Date.now(); // Store timestamp instead of counting seconds
       startTimer.classList.add('hidden');
       stopTimer.classList.remove('hidden');
       
+      // Update display every 100ms for smooth counting
       timerInterval = setInterval(() => {
-        timerSeconds++;
         updateTimerDisplay();
         updateCalculatedRate();
-      }, 1000);
+      }, 100);
     });
 
     stopTimer.addEventListener('click', () => {
       clearInterval(timerInterval);
+      timerInterval = null;
       const studyEndTime = new Date();
       
+      // Store the times and duration
       document.getElementById('studyStartTime').value = studyStartTime.toISOString();
       document.getElementById('studyEndTime').value = studyEndTime.toISOString();
-      document.getElementById('studyDuration').value = timerSeconds;
+      document.getElementById('studyDuration').value = timerElapsedSeconds;
       
       stopTimer.classList.add('hidden');
       startTimer.classList.remove('hidden');
@@ -571,7 +582,9 @@
 
     resetTimer.addEventListener('click', () => {
       clearInterval(timerInterval);
-      timerSeconds = 0;
+      timerInterval = null;
+      timerStartTime = null;
+      timerElapsedSeconds = 0;
       studyStartTime = null;
       updateTimerDisplay();
       updateCalculatedRate();
@@ -882,12 +895,12 @@
         const currentUnitsPerHr = currentHours > 0 ? units / currentHours : 0;
 
         // Calculate 30% margin targets
-        const targetLabor30 = revenue * 0.70; // 30% margin means 70% can go to labor
+        const targetLabor30 = revenue * 0.70;
         const targetHours30 = targetLabor30 / CONFIG.LABOR_RATE;
         const requiredRate30 = targetHours30 > 0 ? units / targetHours30 : 0;
 
         // Calculate 20% margin targets
-        const targetLabor20 = revenue * 0.80; // 20% margin means 80% can go to labor
+        const targetLabor20 = revenue * 0.80;
         const targetHours20 = targetLabor20 / CONFIG.LABOR_RATE;
         const requiredRate20 = targetHours20 > 0 ? units / targetHours20 : 0;
 
@@ -1066,7 +1079,7 @@
       e.preventDefault();
       studyMessage.textContent = '';
       
-      if (timerSeconds === 0) {
+      if (timerElapsedSeconds === 0) {
         studyMessage.textContent = 'Please run the timer first!';
         studyMessage.className = 'mt-1 text-xs text-red-600';
         return;
@@ -1079,11 +1092,13 @@
         workType: formData.get('workType'),
         teamMember: formData.get('teamMember'),
         unitsCompleted: formData.get('unitsCompleted'),
-        duration: timerSeconds,
+        duration: timerElapsedSeconds,
         startTime: formData.get('startTime'),
         endTime: formData.get('endTime'),
         notes: formData.get('notes')
       };
+
+      console.log('Submitting time study:', payload); // Debug log
 
       try {
         setStudySubmitting(true);
@@ -1097,9 +1112,12 @@
           redirect: 'follow'
         });
         
+        console.log('Response status:', res.status); // Debug log
+        
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
         const json = await res.json();
+        console.log('Response JSON:', json); // Debug log
         
         if (!json.success) {
           studyMessage.textContent = 'Error saving study: ' + (json.message || 'Unknown error');
@@ -1107,7 +1125,7 @@
           return;
         }
         
-        studyMessage.textContent = 'Time study saved successfully!';
+        studyMessage.textContent = '✅ Time study saved successfully!';
         studyMessage.className = 'mt-1 text-xs text-emerald-600';
         
         // Reset form and timer
@@ -1121,7 +1139,7 @@
         
       } catch (err) {
         console.error('Study submit error:', err);
-        studyMessage.textContent = 'Network or server error.';
+        studyMessage.textContent = 'Network or server error: ' + err.message;
         studyMessage.className = 'mt-1 text-xs text-red-600';
       } finally {
         setStudySubmitting(false);
