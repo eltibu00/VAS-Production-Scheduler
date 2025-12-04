@@ -241,7 +241,7 @@
           </button>
         </div>
 
-        <!-- Labor Allocation Tracker (NEW!) -->
+        <!-- Labor Allocation Tracker -->
         <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <h3 class="text-sm font-semibold text-slate-800 mb-3">👷 Labor Allocation Entry</h3>
           <p class="text-xs text-slate-600 mb-3">Track daily hours by associate and client</p>
@@ -291,7 +291,8 @@
             
             <div>
               <label class="block text-xs font-medium text-slate-600 mb-1">Hours Spent</label>
-              <input name="hoursSpent" type="number" min="0.1" step="0.1" max="12" required class="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="e.g., 4.5" />
+              <input name="hoursSpent" type="number" min="0.01" step="0.01" max="12" required class="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="e.g., 4.25 or 0.5" />
+              <p class="text-[10px] text-slate-500 mt-1">Accepts: 0.25, 0.5, 0.75, 1.0, etc.</p>
             </div>
             
             <button
@@ -352,6 +353,8 @@
                 <th class="px-2 py-2 text-right">Revenue $</th>
                 <th class="px-2 py-2 text-right">Margin %</th>
                 <th class="px-2 py-2 text-left">SLA</th>
+                <th class="px-2 py-2 text-left">Completed</th>
+                <th class="px-2 py-2 text-left">SLA Status</th>
                 <th class="px-2 py-2 text-left">Priority</th>
                 <th class="px-2 py-2 text-left">Status</th>
                 <th class="px-2 py-2 text-center">Actions</th>
@@ -393,7 +396,7 @@
       </div>
     </section>
 
-    <!-- Labor Allocation Dashboard (NEW!) -->
+    <!-- Labor Allocation Dashboard -->
     <section class="bg-white rounded-xl shadow-sm p-4 mt-6">
       <h2 class="text-sm font-semibold text-slate-800 mb-3">👷 Labor Allocation Summary</h2>
       
@@ -548,8 +551,8 @@
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-medium text-blue-700 mb-1">Actual Hours Spent</label>
-                <input name="actualHours" id="editActualHours" type="number" min="0" step="0.1" placeholder="Override calculated hours" class="w-full border rounded-lg px-3 py-2 text-sm" />
-                <p class="text-[10px] text-blue-600 mt-1">Leave blank to use calculated hours</p>
+                <input name="actualHours" id="editActualHours" type="number" min="0" step="0.01" placeholder="e.g., 4.25 or 0.5" class="w-full border rounded-lg px-3 py-2 text-sm" />
+                <p class="text-[10px] text-blue-600 mt-1">Accepts: 0.25, 0.5, 0.75, etc.</p>
               </div>
               <div>
                 <label class="block text-xs font-medium text-blue-700 mb-1">Actual Labor Cost ($)</label>
@@ -557,6 +560,13 @@
                 <p class="text-[10px] text-blue-600 mt-1">Leave blank to use calculated cost</p>
               </div>
             </div>
+          </div>
+
+          <!-- Completed Date Display (Read-only) -->
+          <div id="completedDateDisplay" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <p class="text-xs font-medium text-emerald-800 mb-1">✅ Completion Information</p>
+            <p class="text-sm text-emerald-700"><strong>Completed:</strong> <span id="completedDateText">-</span></p>
+            <p class="text-sm text-emerald-700"><strong>SLA Status:</strong> <span id="slaStatusText">-</span></p>
           </div>
 
           <div class="flex gap-3 pt-4">
@@ -605,7 +615,9 @@
       margin: 'Margin',
       marginPct: 'Margin %',
       actualHours: 'Actual Hours',
-      actualLaborCost: 'Actual Labor Cost'
+      actualLaborCost: 'Actual Labor Cost',
+      completedDate: 'Completed Date',
+      slaStatus: 'SLA Status'
     };
 
     // DOM Elements
@@ -640,7 +652,7 @@
     const calculatedRate = document.getElementById('calculatedRate');
     const exportStudies = document.getElementById('exportStudies');
 
-    // Labor Elements (NEW!)
+    // Labor Elements
     const laborForm = document.getElementById('laborForm');
     const laborSpinner = document.getElementById('laborSpinner');
     const laborMessage = document.getElementById('laborMessage');
@@ -767,6 +779,13 @@
       laborSpinner.classList.toggle('hidden', !isLoading);
     }
 
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      if (isNaN(date)) return '-';
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
     function openEditModal(rowIndex) {
       const row = GLOBAL_ROWS[rowIndex];
       if (!row) return;
@@ -794,6 +813,17 @@
       document.getElementById('editStatus').value = get('status') || 'Scheduled';
       document.getElementById('editActualHours').value = get('actualHours') || '';
       document.getElementById('editActualLaborCost').value = get('actualLaborCost') || '';
+
+      // Show completed date if status is Completed
+      const completedDate = get('completedDate');
+      const slaStatus = get('slaStatus');
+      if (completedDate) {
+        document.getElementById('completedDateDisplay').classList.remove('hidden');
+        document.getElementById('completedDateText').textContent = formatDate(completedDate);
+        document.getElementById('slaStatusText').textContent = slaStatus || '-';
+      } else {
+        document.getElementById('completedDateDisplay').classList.add('hidden');
+      }
 
       editMessage.textContent = '';
       editModal.classList.remove('hidden');
@@ -1021,6 +1051,9 @@
         const revenue = Number(get('projectRevenue')) || 0;
         const marginPct = revenue > 0 ? (revenue - laborCost) / revenue : 0;
 
+        const completedDate = get('completedDate');
+        const slaStatus = get('slaStatus') || '⏳ Pending';
+
         let slaRaw = get('slaDate');
         let slaText = '';
         let slaClass = '';
@@ -1069,6 +1102,11 @@
         const hoursIndicator = actualHours !== null ? 
           '<span class="text-blue-600" title="Using actual hours">*</span>' : '';
 
+        // SLA Status badge color
+        let slaStatusClass = 'bg-slate-100 text-slate-700';
+        if (slaStatus.includes('On Time')) slaStatusClass = 'bg-emerald-100 text-emerald-800';
+        if (slaStatus.includes('Late')) slaStatusClass = 'bg-red-100 text-red-800';
+
         tr.innerHTML = `
           <td class="px-2 py-1 align-top">
             <div class="font-semibold text-slate-800">${orderId || '-'}</div>
@@ -1083,6 +1121,8 @@
           <td class="px-2 py-1 align-top text-right">$${revenue.toFixed(2)}</td>
           <td class="px-2 py-1 align-top text-right">${(marginPct * 100).toFixed(1)}%</td>
           <td class="px-2 py-1 align-top ${slaClass}">${slaText || '-'}</td>
+          <td class="px-2 py-1 align-top text-[10px]">${completedDate ? formatDate(completedDate) : '-'}</td>
+          <td class="px-2 py-1 align-top"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${slaStatusClass}">${slaStatus}</span></td>
           <td class="px-2 py-1 align-top">${priority}</td>
           <td class="px-2 py-1 align-top">${status}</td>
           <td class="px-2 py-1 align-top text-center">
@@ -1204,7 +1244,7 @@
           <td class="px-2 py-1">${associate}</td>
           <td class="px-2 py-1">${client}</td>
           <td class="px-2 py-1">${workType}</td>
-          <td class="px-2 py-1 text-right font-semibold">${hours.toFixed(1)}</td>
+          <td class="px-2 py-1 text-right font-semibold">${hours.toFixed(2)}</td>
           <td class="px-2 py-1 text-right">$${laborCost.toFixed(2)}</td>
         `;
 
@@ -1400,7 +1440,7 @@
       }
     });
 
-    // Labor Form Submission (NEW!)
+    // Labor Form Submission
     laborForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       laborMessage.textContent = '';
@@ -1440,7 +1480,6 @@
         laborMessage.textContent = '✅ Labor entry saved!';
         laborMessage.className = 'mt-1 text-xs text-emerald-600';
         
-        // Reset only name and hours, keep date, client, work type
         laborForm.querySelector('[name="associateName"]').value = '';
         laborForm.querySelector('[name="hoursSpent"]').value = '';
         
@@ -1515,7 +1554,7 @@
           entry['Associate Name'] || '',
           entry['Client'] || '',
           entry['Work Type'] || '',
-          hours,
+          hours.toFixed(2),
           cost.toFixed(2)
         ]);
       });
@@ -1533,10 +1572,9 @@
 
       const wb = XLSX.utils.book_new();
       const wsData = [
-        ['Order ID', 'Client', 'Work Type', 'Description', 'Units', 'Units/Hr', 'Req. Hours', 'Labor Cost', 'Revenue', 'Margin %', 'SLA Date', 'Priority', 'Status']
+        ['Order ID', 'Client', 'Work Type', 'Description', 'Units', 'Units/Hr', 'Req. Hours', 'Labor Cost', 'Revenue', 'Margin %', 'SLA Date', 'Completed Date', 'SLA Status', 'Priority', 'Status']
       ];
 
-      // Apply current filters
       const clientFilter = filterClient.value;
       const statusFilter = filterStatus.value;
 
@@ -1565,6 +1603,9 @@
         const revenue = Number(get('projectRevenue')) || 0;
         const marginPct = revenue > 0 ? ((revenue - laborCost) / revenue) * 100 : 0;
 
+        const completedDate = get('completedDate');
+        const slaStatus = get('slaStatus') || 'Pending';
+
         wsData.push([
           get('orderId') || '',
           get('client') || '',
@@ -1577,6 +1618,8 @@
           revenue.toFixed(2),
           marginPct.toFixed(1) + '%',
           get('slaDate') || '',
+          completedDate ? formatDate(completedDate) : '',
+          slaStatus,
           get('priority') || '',
           get('status') || ''
         ]);
