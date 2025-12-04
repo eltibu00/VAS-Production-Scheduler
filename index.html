@@ -58,7 +58,7 @@
 
     <!-- Form + Table -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Left Sidebar: Form + Time Study -->
+      <!-- Left Sidebar: Forms -->
       <section class="bg-white rounded-xl shadow-sm p-4 lg:col-span-1">
         <!-- New VAS Job Form -->
         <h2 class="text-sm font-semibold text-slate-800 mb-3">New VAS Job</h2>
@@ -149,7 +149,7 @@
         </form>
 
         <!-- Time Study Calculator -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h3 class="text-sm font-semibold text-slate-800 mb-3">⏱️ Time Study Calculator</h3>
           
           <div class="mb-4 text-center">
@@ -237,7 +237,78 @@
             id="exportStudies"
             class="w-full mt-3 inline-flex justify-center items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-800"
           >
-            📊 Export Time Studies to Excel
+            📊 Export Time Studies
+          </button>
+        </div>
+
+        <!-- Labor Allocation Tracker (NEW!) -->
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <h3 class="text-sm font-semibold text-slate-800 mb-3">👷 Labor Allocation Entry</h3>
+          <p class="text-xs text-slate-600 mb-3">Track daily hours by associate and client</p>
+          
+          <form id="laborForm" class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Date</label>
+              <input name="date" type="date" required class="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Associate Name</label>
+              <input name="associateName" required class="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="Enter name" />
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Client</label>
+              <select name="client" required class="w-full border rounded-lg px-2 py-1.5 text-sm">
+                <option value="">Select Client...</option>
+                <option value="Bears with Benefits, Inc.(Havea)">Bears with Benefits, Inc.(Havea)</option>
+                <option value="Biologique Recherche (BR)">Biologique Recherche (BR)</option>
+                <option value="Granado, INC.">Granado, INC.</option>
+                <option value="IT Works">IT Works</option>
+                <option value="Lampe Berger (Maison)">Lampe Berger (Maison)</option>
+                <option value="LimeLife USA LLC">LimeLife USA LLC</option>
+                <option value="Maelys Cosmetics">Maelys Cosmetics</option>
+                <option value="Natura International, Inc.">Natura International, Inc.</option>
+                <option value="Pierre Fabre (PF)">Pierre Fabre (PF)</option>
+                <option value="Promix Nutrition TopCo Inc">Promix Nutrition TopCo Inc</option>
+                <option value="Radixis Inc (DBA Yves Rocher USA)">Radixis Inc (DBA Yves Rocher USA)</option>
+                <option value="Tiffany and Company">Tiffany and Company</option>
+                <option value="VB Beauty LLC">VB Beauty LLC</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Work Type</label>
+              <select name="workType" required class="w-full border rounded-lg px-2 py-1.5 text-sm">
+                <option value="">Select...</option>
+                <option value="Kitting">Kitting</option>
+                <option value="Bagging">Bagging</option>
+                <option value="Labeling">Labeling</option>
+                <option value="Reboxing">Reboxing</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Hours Spent</label>
+              <input name="hoursSpent" type="number" min="0.1" step="0.1" max="12" required class="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="e.g., 4.5" />
+            </div>
+            
+            <button
+              type="submit"
+              class="w-full inline-flex justify-center items-center gap-2 px-3 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-700"
+            >
+              <span id="laborSpinner" class="hidden animate-spin border-2 border-t-transparent border-white rounded-full w-4 h-4"></span>
+              <span>Save Labor Entry</span>
+            </button>
+            <p id="laborMessage" class="mt-1 text-xs text-slate-600"></p>
+          </form>
+
+          <button
+            id="exportLabor"
+            class="w-full mt-3 inline-flex justify-center items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-800"
+          >
+            📊 Export Labor Report
           </button>
         </div>
       </section>
@@ -258,6 +329,12 @@
               <option value="Completed">Completed</option>
               <option value="On Hold">On Hold</option>
             </select>
+            <button
+              id="exportJobs"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+            >
+              📥 Export Jobs
+            </button>
           </div>
         </div>
 
@@ -312,6 +389,54 @@
             </tr>
           </thead>
           <tbody id="marginTargetsBody" class="divide-y divide-slate-100 text-[11px]"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Labor Allocation Dashboard (NEW!) -->
+    <section class="bg-white rounded-xl shadow-sm p-4 mt-6">
+      <h2 class="text-sm font-semibold text-slate-800 mb-3">👷 Labor Allocation Summary</h2>
+      
+      <!-- Stats -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="bg-purple-50 rounded-lg p-3">
+          <p class="text-xs text-purple-600 uppercase">Associates Today</p>
+          <p id="laborAssociatesCount" class="text-2xl font-bold text-purple-700">0 / 6</p>
+        </div>
+        <div class="bg-purple-50 rounded-lg p-3">
+          <p class="text-xs text-purple-600 uppercase">Total Hours Today</p>
+          <p id="laborHoursToday" class="text-2xl font-bold text-purple-700">0.0</p>
+        </div>
+        <div class="bg-purple-50 rounded-lg p-3">
+          <p class="text-xs text-purple-600 uppercase">Avg Hours/Associate</p>
+          <p id="laborAvgHours" class="text-2xl font-bold text-purple-700">0.0</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+        <input type="date" id="laborFilterDate" class="border rounded-lg px-2 py-1.5 text-sm" />
+        <select id="laborFilterAssociate" class="border rounded-lg px-2 py-1.5 text-sm">
+          <option value="">All Associates</option>
+        </select>
+        <select id="laborFilterClient" class="border rounded-lg px-2 py-1.5 text-sm">
+          <option value="">All Clients</option>
+        </select>
+      </div>
+      
+      <div class="overflow-auto max-h-[400px] border rounded-xl">
+        <table class="min-w-full text-xs">
+          <thead class="bg-slate-50 text-slate-600 border-b text-[11px] uppercase">
+            <tr>
+              <th class="px-2 py-2 text-left">Date</th>
+              <th class="px-2 py-2 text-left">Associate</th>
+              <th class="px-2 py-2 text-left">Client</th>
+              <th class="px-2 py-2 text-left">Work Type</th>
+              <th class="px-2 py-2 text-right">Hours</th>
+              <th class="px-2 py-2 text-right">Labor Cost</th>
+            </tr>
+          </thead>
+          <tbody id="laborBody" class="divide-y divide-slate-100 text-[11px]"></tbody>
         </table>
       </div>
     </section>
@@ -488,6 +613,7 @@
     const refreshIcon = document.getElementById('refreshIcon');
     const ordersBody = document.getElementById('ordersBody');
     const marginTargetsBody = document.getElementById('marginTargetsBody');
+    const laborBody = document.getElementById('laborBody');
     const kpiHours = document.getElementById('kpiHours');
     const kpiLaborCost = document.getElementById('kpiLaborCost');
     const kpiThroughput = document.getElementById('kpiThroughput');
@@ -514,14 +640,33 @@
     const calculatedRate = document.getElementById('calculatedRate');
     const exportStudies = document.getElementById('exportStudies');
 
+    // Labor Elements (NEW!)
+    const laborForm = document.getElementById('laborForm');
+    const laborSpinner = document.getElementById('laborSpinner');
+    const laborMessage = document.getElementById('laborMessage');
+    const exportLabor = document.getElementById('exportLabor');
+    const exportJobs = document.getElementById('exportJobs');
+    const laborFilterDate = document.getElementById('laborFilterDate');
+    const laborFilterAssociate = document.getElementById('laborFilterAssociate');
+    const laborFilterClient = document.getElementById('laborFilterClient');
+    const laborAssociatesCount = document.getElementById('laborAssociatesCount');
+    const laborHoursToday = document.getElementById('laborHoursToday');
+    const laborAvgHours = document.getElementById('laborAvgHours');
+
     let GLOBAL_ROWS = [];
     let GLOBAL_TIME_STUDIES = [];
+    let GLOBAL_LABOR_ENTRIES = [];
     
-    // FIXED: Timestamp-based timer (works even when screen locks)
+    // Timer variables
     let timerInterval = null;
     let timerStartTime = null;
     let timerElapsedSeconds = 0;
     let studyStartTime = null;
+
+    // Set today's date in labor form
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('#laborForm input[name="date"]').value = today;
+    laborFilterDate.value = today;
 
     // ================= TIMER FUNCTIONS (MOBILE-FRIENDLY) =================
     function formatTime(seconds) {
@@ -533,7 +678,6 @@
 
     function updateTimerDisplay() {
       if (timerStartTime) {
-        // Calculate elapsed time based on timestamps (works even if screen was locked)
         const now = Date.now();
         timerElapsedSeconds = Math.floor((now - timerStartTime) / 1000);
       }
@@ -555,11 +699,10 @@
 
     startTimer.addEventListener('click', () => {
       studyStartTime = new Date();
-      timerStartTime = Date.now(); // Store timestamp instead of counting seconds
+      timerStartTime = Date.now();
       startTimer.classList.add('hidden');
       stopTimer.classList.remove('hidden');
       
-      // Update display every 100ms for smooth counting
       timerInterval = setInterval(() => {
         updateTimerDisplay();
         updateCalculatedRate();
@@ -571,7 +714,6 @@
       timerInterval = null;
       const studyEndTime = new Date();
       
-      // Store the times and duration
       document.getElementById('studyStartTime').value = studyStartTime.toISOString();
       document.getElementById('studyEndTime').value = studyEndTime.toISOString();
       document.getElementById('studyDuration').value = timerElapsedSeconds;
@@ -618,6 +760,11 @@
     function setStudySubmitting(isLoading) {
       timeStudyForm.querySelector('button[type="submit"]').disabled = isLoading;
       studySpinner.classList.toggle('hidden', !isLoading);
+    }
+
+    function setLaborSubmitting(isLoading) {
+      laborForm.querySelector('button[type="submit"]').disabled = isLoading;
+      laborSpinner.classList.toggle('hidden', !isLoading);
     }
 
     function openEditModal(rowIndex) {
@@ -706,6 +853,26 @@
       }
     }
 
+    async function fetchLaborEntries() {
+      try {
+        const url = CONFIG.SCRIPT_URL + '?action=listLabor';
+        const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+        
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        
+        const json = await res.json();
+        
+        if (json.success) {
+          GLOBAL_LABOR_ENTRIES = json.data || [];
+          populateLaborFilters();
+          applyLaborFilters();
+        }
+        
+      } catch (err) {
+        console.error('Fetch labor entries error:', err);
+      }
+    }
+
     function populateClientFilter(rows) {
       const existing = new Set();
       existing.add('');
@@ -728,6 +895,38 @@
       });
     }
 
+    function populateLaborFilters() {
+      // Populate associate dropdown
+      const associates = new Set();
+      GLOBAL_LABOR_ENTRIES.forEach(entry => {
+        const name = entry['Associate Name'];
+        if (name) associates.add(name);
+      });
+
+      laborFilterAssociate.innerHTML = '<option value="">All Associates</option>';
+      Array.from(associates).sort().forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        laborFilterAssociate.appendChild(opt);
+      });
+
+      // Populate client dropdown
+      const clients = new Set();
+      GLOBAL_LABOR_ENTRIES.forEach(entry => {
+        const client = entry['Client'];
+        if (client) clients.add(client);
+      });
+
+      laborFilterClient.innerHTML = '<option value="">All Clients</option>';
+      Array.from(clients).sort().forEach(client => {
+        const opt = document.createElement('option');
+        opt.value = client;
+        opt.textContent = client;
+        laborFilterClient.appendChild(opt);
+      });
+    }
+
     function applyFilters() {
       const clientFilter = filterClient.value;
       const statusFilter = filterStatus.value;
@@ -744,6 +943,46 @@
 
       renderFilteredTable(filtered);
       renderMarginTargets(filtered);
+    }
+
+    function applyLaborFilters() {
+      const dateFilter = laborFilterDate.value;
+      const associateFilter = laborFilterAssociate.value;
+      const clientFilter = laborFilterClient.value;
+
+      const filtered = GLOBAL_LABOR_ENTRIES.filter(entry => {
+        const entryDate = entry['Date'];
+        const associate = entry['Associate Name'] || '';
+        const client = entry['Client'] || '';
+
+        const matchDate = !dateFilter || entryDate === dateFilter;
+        const matchAssociate = !associateFilter || associate === associateFilter;
+        const matchClient = !clientFilter || client === clientFilter;
+
+        return matchDate && matchAssociate && matchClient;
+      });
+
+      renderLaborTable(filtered);
+      updateLaborStats(dateFilter || today);
+    }
+
+    function updateLaborStats(date) {
+      const todayEntries = GLOBAL_LABOR_ENTRIES.filter(entry => entry['Date'] === date);
+      
+      const uniqueAssociates = new Set();
+      let totalHours = 0;
+
+      todayEntries.forEach(entry => {
+        uniqueAssociates.add(entry['Associate Name']);
+        totalHours += Number(entry['Hours Spent']) || 0;
+      });
+
+      const associateCount = uniqueAssociates.size;
+      const avgHours = associateCount > 0 ? totalHours / associateCount : 0;
+
+      laborAssociatesCount.textContent = `${associateCount} / 6`;
+      laborHoursToday.textContent = totalHours.toFixed(1);
+      laborAvgHours.textContent = avgHours.toFixed(1);
     }
 
     // ================= RENDER TABLES =================
@@ -894,17 +1133,14 @@
         const currentMarginPct = revenue > 0 ? (revenue - laborCost) / revenue : 0;
         const currentUnitsPerHr = currentHours > 0 ? units / currentHours : 0;
 
-        // Calculate 30% margin targets
         const targetLabor30 = revenue * 0.70;
         const targetHours30 = targetLabor30 / CONFIG.LABOR_RATE;
         const requiredRate30 = targetHours30 > 0 ? units / targetHours30 : 0;
 
-        // Calculate 20% margin targets
         const targetLabor20 = revenue * 0.80;
         const targetHours20 = targetLabor20 / CONFIG.LABOR_RATE;
         const requiredRate20 = targetHours20 > 0 ? units / targetHours20 : 0;
 
-        // Determine status for 30%
         let status30 = '';
         let status30Class = '';
         if (currentMarginPct >= 0.30) {
@@ -918,7 +1154,6 @@
           status30Class = 'bg-red-100 text-red-800';
         }
 
-        // Determine status for 20%
         let status20 = '';
         let status20Class = '';
         if (currentMarginPct >= 0.20) {
@@ -949,6 +1184,31 @@
         `;
 
         marginTargetsBody.appendChild(tr);
+      });
+    }
+
+    function renderLaborTable(entries) {
+      laborBody.innerHTML = '';
+
+      entries.forEach(entry => {
+        const date = entry['Date'] || '';
+        const associate = entry['Associate Name'] || '';
+        const client = entry['Client'] || '';
+        const workType = entry['Work Type'] || '';
+        const hours = Number(entry['Hours Spent']) || 0;
+        const laborCost = hours * CONFIG.LABOR_RATE;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-2 py-1">${date}</td>
+          <td class="px-2 py-1">${associate}</td>
+          <td class="px-2 py-1">${client}</td>
+          <td class="px-2 py-1">${workType}</td>
+          <td class="px-2 py-1 text-right font-semibold">${hours.toFixed(1)}</td>
+          <td class="px-2 py-1 text-right">$${laborCost.toFixed(2)}</td>
+        `;
+
+        laborBody.appendChild(tr);
       });
     }
 
@@ -1098,8 +1358,6 @@
         notes: formData.get('notes')
       };
 
-      console.log('Submitting time study:', payload); // Debug log
-
       try {
         setStudySubmitting(true);
         
@@ -1112,12 +1370,9 @@
           redirect: 'follow'
         });
         
-        console.log('Response status:', res.status); // Debug log
-        
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
         const json = await res.json();
-        console.log('Response JSON:', json); // Debug log
         
         if (!json.success) {
           studyMessage.textContent = 'Error saving study: ' + (json.message || 'Unknown error');
@@ -1128,7 +1383,6 @@
         studyMessage.textContent = '✅ Time study saved successfully!';
         studyMessage.className = 'mt-1 text-xs text-emerald-600';
         
-        // Reset form and timer
         timeStudyForm.reset();
         resetTimer.click();
         
@@ -1146,7 +1400,65 @@
       }
     });
 
-    // ================= EXPORT TO EXCEL =================
+    // Labor Form Submission (NEW!)
+    laborForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      laborMessage.textContent = '';
+
+      const formData = new FormData(laborForm);
+
+      const payload = {
+        date: formData.get('date'),
+        associateName: formData.get('associateName'),
+        client: formData.get('client'),
+        workType: formData.get('workType'),
+        hoursSpent: formData.get('hoursSpent')
+      };
+
+      try {
+        setLaborSubmitting(true);
+        
+        const res = await fetch(CONFIG.SCRIPT_URL, {
+          method: 'POST',
+          body: new URLSearchParams({
+            action: 'addLabor',
+            payload: JSON.stringify(payload)
+          }),
+          redirect: 'follow'
+        });
+        
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        
+        const json = await res.json();
+        
+        if (!json.success) {
+          laborMessage.textContent = 'Error saving entry: ' + (json.message || 'Unknown error');
+          laborMessage.className = 'mt-1 text-xs text-red-600';
+          return;
+        }
+        
+        laborMessage.textContent = '✅ Labor entry saved!';
+        laborMessage.className = 'mt-1 text-xs text-emerald-600';
+        
+        // Reset only name and hours, keep date, client, work type
+        laborForm.querySelector('[name="associateName"]').value = '';
+        laborForm.querySelector('[name="hoursSpent"]').value = '';
+        
+        setTimeout(() => {
+          laborMessage.textContent = '';
+          fetchLaborEntries();
+        }, 2000);
+        
+      } catch (err) {
+        console.error('Labor submit error:', err);
+        laborMessage.textContent = 'Network or server error: ' + err.message;
+        laborMessage.className = 'mt-1 text-xs text-red-600';
+      } finally {
+        setLaborSubmitting(false);
+      }
+    });
+
+    // ================= EXPORT FUNCTIONS =================
     exportStudies.addEventListener('click', async () => {
       await fetchTimeStudies();
       
@@ -1182,10 +1494,110 @@
       XLSX.writeFile(wb, 'VAS_Time_Studies.xlsx');
     });
 
+    exportLabor.addEventListener('click', async () => {
+      await fetchLaborEntries();
+      
+      if (GLOBAL_LABOR_ENTRIES.length === 0) {
+        alert('No labor entries to export yet.');
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const wsData = [
+        ['Date', 'Associate Name', 'Client', 'Work Type', 'Hours Spent', 'Labor Cost ($27/hr)']
+      ];
+
+      GLOBAL_LABOR_ENTRIES.forEach(entry => {
+        const hours = Number(entry['Hours Spent']) || 0;
+        const cost = hours * CONFIG.LABOR_RATE;
+        wsData.push([
+          entry['Date'] || '',
+          entry['Associate Name'] || '',
+          entry['Client'] || '',
+          entry['Work Type'] || '',
+          hours,
+          cost.toFixed(2)
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Labor Allocation');
+      XLSX.writeFile(wb, 'VAS_Labor_Report.xlsx');
+    });
+
+    exportJobs.addEventListener('click', () => {
+      if (GLOBAL_ROWS.length === 0) {
+        alert('No jobs to export yet.');
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const wsData = [
+        ['Order ID', 'Client', 'Work Type', 'Description', 'Units', 'Units/Hr', 'Req. Hours', 'Labor Cost', 'Revenue', 'Margin %', 'SLA Date', 'Priority', 'Status']
+      ];
+
+      // Apply current filters
+      const clientFilter = filterClient.value;
+      const statusFilter = filterStatus.value;
+
+      const filtered = GLOBAL_ROWS.filter(row => {
+        const client = row[headersMap.client] || '';
+        const status = row[headersMap.status] || '';
+        const matchClient = clientFilter === '' || client === clientFilter;
+        const matchStatus = statusFilter === '' || status === statusFilter;
+        return matchClient && matchStatus;
+      });
+
+      filtered.forEach(row => {
+        const get = (key) => row[headersMap[key]];
+        
+        const units = Number(get('totalUnits')) || 0;
+        const rate = Number(get('standardRate')) || 0;
+        const actualHours = Number(get('actualHours')) || null;
+        const actualLaborCost = Number(get('actualLaborCost')) || null;
+        
+        const calculatedHours = rate > 0 ? units / rate : 0;
+        const reqHours = actualHours !== null ? actualHours : calculatedHours;
+        
+        const calculatedLaborCost = calculatedHours * CONFIG.LABOR_RATE;
+        const laborCost = actualLaborCost !== null ? actualLaborCost : calculatedLaborCost;
+        
+        const revenue = Number(get('projectRevenue')) || 0;
+        const marginPct = revenue > 0 ? ((revenue - laborCost) / revenue) * 100 : 0;
+
+        wsData.push([
+          get('orderId') || '',
+          get('client') || '',
+          get('workType') || '',
+          get('description') || '',
+          units,
+          rate,
+          reqHours.toFixed(2),
+          laborCost.toFixed(2),
+          revenue.toFixed(2),
+          marginPct.toFixed(1) + '%',
+          get('slaDate') || '',
+          get('priority') || '',
+          get('status') || ''
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, 'VAS Jobs');
+      XLSX.writeFile(wb, 'VAS_Jobs_Report.xlsx');
+    });
+
     // ================= EVENT LISTENERS =================
-    refreshBtn.addEventListener('click', fetchOrders);
+    refreshBtn.addEventListener('click', () => {
+      fetchOrders();
+      fetchLaborEntries();
+    });
+    
     filterClient.addEventListener('change', applyFilters);
     filterStatus.addEventListener('change', applyFilters);
+    laborFilterDate.addEventListener('change', applyLaborFilters);
+    laborFilterAssociate.addEventListener('change', applyLaborFilters);
+    laborFilterClient.addEventListener('change', applyLaborFilters);
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !editModal.classList.contains('hidden')) {
@@ -1196,6 +1608,7 @@
     // ================= INITIAL LOAD =================
     fetchOrders();
     fetchTimeStudies();
+    fetchLaborEntries();
   </script>
 </body>
 </html>
