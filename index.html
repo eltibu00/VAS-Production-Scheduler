@@ -14,14 +14,52 @@
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
- <div class="max-w-[1800px] mx-auto px-4 py-6">
+  <div class="max-w-[1800px] mx-auto px-4 py-6">
     <!-- Header -->
     <header class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-800">VAS Production Scheduler</h1>
-        <p class="text-sm text-slate-600">
-          Kitting · Bagging · Labeling – capacity, SLA, labor and margin in one view.
-        </p>
+      <div class="flex items-center gap-4">
+        <!-- VAS Logo -->
+        <div class="flex items-center gap-1">
+          <!-- V Circle -->
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-2xl border-3 border-white shadow-lg">
+            <div class="flex flex-col items-center leading-none">
+              <span class="text-2xl">V</span>
+              <span class="text-[8px] font-normal tracking-wide">VALUE</span>
+            </div>
+          </div>
+          <!-- A Diamond -->
+          <div class="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white font-bold text-2xl border-3 border-white shadow-lg transform rotate-45 -ml-2">
+            <div class="transform -rotate-45 flex flex-col items-center leading-none">
+              <span class="text-2xl">A</span>
+              <span class="text-[8px] font-normal tracking-wide">ADDED</span>
+            </div>
+          </div>
+          <!-- S Hexagon -->
+          <div class="relative w-14 h-14 flex items-center justify-center -ml-2">
+            <svg viewBox="0 0 100 100" class="absolute w-full h-full drop-shadow-lg">
+              <defs>
+                <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#2dd4bf;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <polygon points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5" 
+                       fill="url(#hexGradient)" stroke="white" stroke-width="4"/>
+            </svg>
+            <div class="relative z-10 flex flex-col items-center leading-none text-white font-bold">
+              <span class="text-2xl">S</span>
+              <span class="text-[8px] font-normal tracking-wide">SERVICES</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Title -->
+        <div>
+          <h1 class="text-2xl font-bold text-slate-800">VAS Production Scheduler</h1>
+          <p class="text-sm text-slate-600">
+            Kitting · Bagging · Labeling – capacity, SLA, labor and margin in one view.
+          </p>
+        </div>
       </div>
       <button id="refreshBtn" class="mt-2 sm:mt-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-900">
         <span id="refreshIcon" class="hidden animate-spin border-2 border-t-transparent border-white rounded-full w-4 h-4"></span>
@@ -57,7 +95,7 @@
     </section>
 
     <!-- Form + Table -->
-    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Left Sidebar: Forms -->
       <section class="bg-white rounded-xl shadow-sm p-4 lg:col-span-1">
         <!-- New VAS Job Form -->
@@ -315,7 +353,7 @@
       </section>
 
       <!-- Table -->
-      <section class="bg-white rounded-xl shadow-sm p-4 xl:col-span-3">
+      <section class="bg-white rounded-xl shadow-sm p-4 lg:col-span-2">
         <div class="flex flex-col sm:flex-row gap-4 mb-4 sm:items-center sm:justify-between">
           <h2 class="text-sm font-semibold text-slate-800">Open Jobs</h2>
           <div class="flex flex-col sm:flex-row gap-3">
@@ -340,7 +378,7 @@
         </div>
 
         <div class="overflow-auto max-h-[500px] border rounded-xl">
-          <table class="min-w-full text-sm">
+          <table class="min-w-full text-xs">
             <thead class="bg-slate-50 text-slate-600 border-b text-[11px] uppercase">
               <tr>
                 <th class="px-2 py-2 text-left">Order</th>
@@ -360,7 +398,7 @@
                 <th class="px-2 py-2 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody id="ordersBody" class="divide-y divide-slate-100 text-sm"></tbody>
+            <tbody id="ordersBody" class="divide-y divide-slate-100 text-[11px]"></tbody>
           </table>
         </div>
       </section>
